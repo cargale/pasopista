@@ -231,8 +231,8 @@ footer{max-width:980px;margin:0 auto 40px;padding:0 20px;color:var(--ink-soft);f
     <p class="hint">Introduce el ritmo y te doy los tiempos de paso por 200 m y 400 m (y el resto de referencias de pista).</p>
     <div class="row">
       <div>
-        <label for="ritmo">Ritmo (min:seg por km)</label>
-        <input id="ritmo" type="text" inputmode="numeric" placeholder="3:30" value="3:30">
+        <label for="ritmo">Ritmo por km (330 = 3:30)</label>
+        <input id="ritmo" type="text" inputmode="numeric" placeholder="330" value="3:30">
       </div>
       <div style="display:flex;align-items:flex-end">
         <button class="btn" onclick="calcRitmo()">Calcular pasos</button>
@@ -263,8 +263,8 @@ footer{max-width:980px;margin:0 auto 40px;padding:0 20px;color:var(--ink-soft);f
         </select>
       </div>
       <div>
-        <label for="obj">Tiempo objetivo</label>
-        <input id="obj" type="text" inputmode="numeric" placeholder="2:55" value="2:55">
+        <label for="obj">Tiempo objetivo (255 = 2:55)</label>
+        <input id="obj" type="text" inputmode="numeric" placeholder="255" value="2:55">
       </div>
       <div style="display:flex;align-items:flex-end">
         <button class="btn" onclick="calcObjetivo()">Generar pasos</button>
@@ -299,8 +299,8 @@ footer{max-width:980px;margin:0 auto 40px;padding:0 20px;color:var(--ink-soft);f
         <select id="prueba"></select>
       </div>
       <div>
-        <label for="marca">Marca</label>
-        <input id="marca" type="text" inputmode="numeric" placeholder="2:55.4">
+        <label for="marca">Marca (255.4 = 2:55.4)</label>
+        <input id="marca" type="text" inputmode="decimal" placeholder="255.4">
       </div>
     </div>
     <button class="btn" onclick="calcHungara()">Calcular equivalencias</button>
@@ -320,6 +320,23 @@ function parseTime(str){
   if(!str) return null;
   str = str.trim().replace(',', '.').replace(/['"’″]/g,':').replace(/::+/g,':');
   if(!/^[\d:.]+$/.test(str)) return null;
+  /* sin ":" → formato compacto de teclado numérico: 330 = 3:30, 1655 = 16:55, 13200 = 1:32:00 */
+  if(str.indexOf(':') === -1){
+    const dot = str.indexOf('.');
+    const intPart = dot === -1 ? str : str.slice(0, dot);
+    const decPart = dot === -1 ? '' : str.slice(dot);
+    if(intPart.length > 2){
+      const ss = parseInt(intPart.slice(-2), 10);
+      const mm = parseInt(intPart.slice(-4, -2) || '0', 10);
+      const hh = parseInt(intPart.slice(0, -4) || '0', 10);
+      if(ss < 60 && mm < 60){
+        const s = hh*3600 + mm*60 + ss + (decPart ? parseFloat('0' + decPart) : 0);
+        return s > 0 ? s : null;
+      }
+    }
+    const s = parseFloat(str);
+    return (isFinite(s) && s > 0) ? s : null;
+  }
   const parts = str.split(':');
   if(parts.length > 3 || parts.some(p => p === '')) return null;
   let s = 0;
@@ -355,7 +372,7 @@ function calcRitmo(){
   const t = parseTime(document.getElementById('ritmo').value);
   const out = document.getElementById('outRitmo');
   if(t === null || t < 100 || t > 900){
-    showErr('errRitmo','Escribe el ritmo como min:seg por km, por ejemplo 3:30.');
+    showErr('errRitmo','Escribe el ritmo en min y seg por km: 330 o 3:30.');
     out.innerHTML = ''; return;
   }
   showErr('errRitmo','');
@@ -378,7 +395,7 @@ function calcObjetivo(){
   const T = parseTime(document.getElementById('obj').value);
   const out = document.getElementById('outObj');
   if(T === null){
-    showErr('errObj','Escribe el tiempo objetivo, por ejemplo 2:55 o 1:32:00.');
+    showErr('errObj','Escribe el tiempo objetivo: 255 (=2:55) o 13200 (=1:32:00).');
     out.innerHTML = ''; return;
   }
   const ritmoKm = T / D * 1000;
@@ -465,7 +482,7 @@ function calcHungara(){
   const t = parseTime(document.getElementById('marca').value);
   const out = document.getElementById('outHung');
   if(t === null){
-    showErr('errHung','Escribe la marca como min:seg.décimas (2:55.4) o solo segundos (55.2).');
+    showErr('errHung','Escribe la marca: 255.4 (=2:55.4) o solo segundos (55.2).');
     out.innerHTML = ''; return;
   }
   const c = TABLA[sexo][prueba];
