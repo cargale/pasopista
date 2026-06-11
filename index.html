@@ -212,11 +212,25 @@ td .ahead,td .behind{font-weight:700}
 .trackwrap svg{display:block;width:100%;height:auto}
 .tcenter{
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  text-align:center;width:56%;
+  text-align:center;width:78%;
 }
-.tcenter .big{font-size:42px}
-.tcenter #cDiff{font-size:22px;margin:2px 0 0;min-height:26px}
-#cRem{font-size:13px;color:#D8CFC6}
+.tcenter .big{
+  font-size:clamp(36px,13vw,56px);
+  white-space:nowrap;letter-spacing:-.01em;line-height:1;
+}
+#cDiff{
+  display:inline-block;border-radius:999px;padding:3px 16px;
+  font-family:'Chivo Mono',monospace;font-weight:700;font-size:21px;
+  font-variant-numeric:tabular-nums;margin:5px 0 4px;min-height:0;
+  color:#8A8078;
+}
+#cDiff.fahead{background:#2E8B5F;color:#FFFFFF}
+#cDiff.fbehind{background:#C0392B;color:#FFFFFF}
+#cPace{
+  font-size:13px;color:#D8CFC6;white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+#cPace strong{color:#FFFFFF}
 .tlbl{
   font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:11px;
   letter-spacing:.1em;fill:#FFFFFF;
@@ -252,9 +266,10 @@ td .ahead,td .behind{font-weight:700}
   .points .lbl{font-size:13px}
   td,th{padding:6px 5px;font-size:14px}
   td{font-size:15px}
-  .tcenter .big{font-size:31px}
-  .tcenter #cDiff{font-size:17px}
-  #cRem{font-size:11px}
+  .crono{padding:14px 8px}
+  .trackwrap{max-width:100%}
+  #cDiff{font-size:18px;padding:2px 12px}
+  #cPace{font-size:11px}
   .cbtn{font-size:26px;padding:20px 8px}
 }
 @media (max-width:380px){
@@ -286,7 +301,7 @@ td .ahead,td .behind{font-weight:700}
 <nav>
   <button id="tabPasos" class="on" onclick="showTab('pasos')">Pasos 200 / 400</button>
   <button id="tabSeg" onclick="showTab('seguir')">Seguir carrera</button>
-  <button id="tabHung" onclick="showTab('hungara')">Estimador húngaro</button>
+  <button id="tabHung" onclick="showTab('hungara')">Estima tu marca</button>
 </nav>
 
 <main>
@@ -383,7 +398,7 @@ td .ahead,td .behind{font-weight:700}
 <section id="hungara">
 
   <div class="card">
-    <h2>Estimador · tabla húngara (World Athletics)</h2>
+    <h2>Estima tu marca · tabla húngara</h2>
     <p class="hint">Escribe tu nombre y tu marca en una prueba: calculo tus puntos en la tabla húngara y los tiempos equivalentes en el resto de distancias.</p>
     <div class="row">
       <div>
@@ -640,8 +655,8 @@ function prepCarrera(){
         '</svg>' +
         '<div class="tcenter">' +
           '<div class="big" id="cTime">0:00.0</div>' +
-          '<div id="cDiff">&nbsp;</div>' +
-          '<div id="cRem">' + D + ' m por delante</div>' +
+          '<div id="cDiff">·</div>' +
+          '<div id="cPace">Obj <strong>' + fmtP(T/D*200) + '</strong> /200 · Real <strong>—</strong> · ' + D + ' m</div>' +
         '</div>' +
       '</div>' +
       '<div id="cInfo">Siguiente paso: ' + targets[0].label + ' · objetivo ' + fmt(targets[0].t, 1) + '</div>' +
@@ -657,6 +672,7 @@ function prepCarrera(){
 
 /* ---------- lógica del cronómetro ---------- */
 function nowS(){ return performance.now()/1000; }
+function fmtP(s){ return s < 60 ? s.toFixed(1) : fmt(s); }
 function fmtDiff(d){
   const s = Math.abs(d).toFixed(1);
   return d <= 0 ? '−' + s + 's' : '+' + s + 's';
@@ -685,8 +701,9 @@ function cronoLap(){
   document.getElementById('dif_' + i).innerHTML =
     '<span class="' + (d <= 0 ? 'ahead' : 'behind') + '">' + fmtDiff(d) + '</span>';
   const proj = t / tg.m * crono.D;
-  document.getElementById('cDiff').innerHTML =
-    '<span class="' + (d <= 0 ? 'ahead' : 'behind') + '">' + fmtDiff(d) + '</span>';
+  const cd = document.getElementById('cDiff');
+  cd.textContent = fmtDiff(d);
+  cd.className = d <= 0 ? 'fahead' : 'fbehind';
   if(tg.meta){
     crono.running = false; crono.done = true;
     cancelAnimationFrame(crono.raf);
@@ -712,7 +729,9 @@ function cronoUndo(){
   if(crono.done){ crono.done = false; crono.running = true; cronoLoop(); document.getElementById('cLbl').textContent = crono.D + ' m · objetivo ' + fmt(crono.T, 1); }
   const nx = crono.targets[crono.laps.length];
   document.getElementById('cInfo').textContent = 'Siguiente: ' + nx.label + ' · objetivo ' + fmt(nx.t, crono.dec);
-  if(!crono.laps.length) document.getElementById('cDiff').innerHTML = '&nbsp;';
+  if(!crono.laps.length){ const cd = document.getElementById('cDiff'); cd.textContent = '·'; cd.className = ''; }
+  else { const j = crono.laps.length - 1, dd = crono.laps[j] - crono.targets[j].t;
+         const cd = document.getElementById('cDiff'); cd.textContent = fmtDiff(dd); cd.className = dd <= 0 ? 'fahead' : 'fbehind'; }
   cronoButtons();
 }
 function cronoReset(silent){
@@ -725,8 +744,8 @@ function cronoReset(silent){
     if(r) r.textContent = '—'; if(f) f.textContent = '—';
   });
   document.getElementById('cTime').textContent = '0:00.0';
-  document.getElementById('cDiff').innerHTML = '&nbsp;';
-  document.getElementById('cRem').textContent = crono.D + ' m por delante';
+  const cd0 = document.getElementById('cDiff'); cd0.textContent = '·'; cd0.className = '';
+  document.getElementById('cPace').innerHTML = 'Obj <strong>' + fmtP(crono.T/crono.D*200) + '</strong> /200 · Real <strong>—</strong> · ' + crono.D + ' m';
   const v = crono.D/400;
   document.getElementById('cLbl').textContent = crono.D + ' m · objetivo ' + fmt(crono.T, 1) + ' · ' + (Number.isInteger(v) ? v : v.toFixed(2).replace('.', ',')) + ' vueltas';
   document.getElementById('cInfo').textContent = 'Siguiente paso: ' + crono.targets[0].label + ' · objetivo ' + fmt(crono.targets[0].t, crono.dec);
@@ -778,8 +797,19 @@ function trackUpdate(t){
   setDot('dReal', trackPoint(trackP(realD)));
   const behind = realD < goalD - 0.5;
   document.getElementById('dReal').setAttribute('fill', behind ? '#FF6B4A' : '#46B97E');
+  const n = crono.laps.length;
+  let realPace = '—';
+  if(crono.done){
+    realPace = fmtP(crono.laps[crono.laps.length-1] / crono.D * 200);
+  } else if(n >= 1){
+    const v = n === 1 ? crono.targets[0].m / crono.laps[0]
+                      : (crono.targets[n-1].m - crono.targets[n-2].m) / (crono.laps[n-1] - crono.laps[n-2]);
+    realPace = fmtP(200 / v);
+  }
   const rem = Math.max(0, Math.round((crono.D - realD) / 5) * 5);
-  document.getElementById('cRem').textContent = crono.done ? '¡Meta!' : 'Quedan ' + rem + ' m';
+  document.getElementById('cPace').innerHTML =
+    'Obj <strong>' + fmtP(crono.T/crono.D*200) + '</strong> /200 · Real <strong>' + realPace + '</strong>' +
+    (crono.done ? ' · ¡Meta!' : ' · ' + rem + ' m');
 }
 async function cronoWake(on){
   try{
