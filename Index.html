@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pasos Pista · Calculadora de ritmos y estimador húngaro</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23C8502E'/%3E%3Crect x='7' y='18' width='50' height='28' rx='14' fill='none' stroke='%23FFFFFF' stroke-width='3.5'/%3E%3Crect x='14' y='25' width='36' height='14' rx='7' fill='none' stroke='%23FFD9C7' stroke-width='2' stroke-dasharray='3 4'/%3E%3Ccircle cx='43' cy='46' r='4' fill='%23FFFFFF'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pasos Pista">
+<meta name="theme-color" content="#C8502E">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=Chivo+Mono:wght@400;500;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --tartan:#C8502E;
+  --tartan-dark:#A23E22;
+  --paper:#FAF6F0;
+  --ink:#241F1A;
+  --ink-soft:#6B6056;
+  --line:#E8DFD4;
+  --lane:#FFFFFF;
+  --crono:#1F6B4E;
+  --card:#FFFFFF;
+  --chip:#FDF1EB;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Nunito',sans-serif;
+  font-size:16px;
+  line-height:1.5;
+}
+
+/* ---------- Cabecera: banda de tartán con calles ---------- */
+header{
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      var(--tartan) 0px, var(--tartan) 64px,
+      var(--lane) 64px, var(--lane) 69px
+    );
+  background-color:var(--tartan);
+  padding:34px 20px 30px;
+  position:relative;
+  overflow:hidden;
+}
+header .inner{max-width:980px;margin:0 auto;display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+h1{
+  font-family:'Saira Condensed',sans-serif;
+  font-weight:800;
+  font-size:clamp(44px,8vw,72px);
+  letter-spacing:.04em;
+  line-height:.95;
+  color:var(--lane);
+  text-transform:uppercase;
+  text-shadow:0 2px 0 rgba(0,0,0,.18);
+}
+header .sub{
+  color:#FFE3D6;
+  font-weight:700;
+  font-size:14px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  margin-top:6px;
+}
+.oval{flex:0 0 auto}
+
+/* ---------- Pestañas de módulo ---------- */
+nav{
+  max-width:980px;margin:-20px auto 0;padding:0 20px;position:relative;z-index:2;
+  display:flex;gap:10px;flex-wrap:wrap;
+}
+nav button{
+  font-family:'Saira Condensed',sans-serif;
+  font-weight:700;font-size:18px;letter-spacing:.05em;text-transform:uppercase;
+  border:2px solid var(--tartan-dark);
+  background:var(--card);color:var(--tartan-dark);
+  padding:10px 20px;border-radius:10px;cursor:pointer;
+  box-shadow:0 3px 0 rgba(0,0,0,.12);
+}
+nav button.on{background:var(--ink);border-color:var(--ink);color:var(--lane)}
+nav button:focus-visible{outline:3px solid var(--crono);outline-offset:2px}
+
+main{max-width:980px;margin:26px auto 60px;padding:0 20px}
+section{display:none}
+section.on{display:block}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:22px;
+  margin-bottom:22px;
+  box-shadow:0 2px 6px rgba(36,31,26,.05);
+}
+h2{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:24px;
+  letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px;
+}
+.hint{color:var(--ink-soft);font-size:14px;margin-bottom:16px}
+
+label{display:block;font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
+input,select{
+  width:100%;
+  font-family:'Chivo Mono',monospace;
+  font-size:20px;
+  padding:10px 12px;
+  border:2px solid var(--line);
+  border-radius:10px;
+  background:#FFFDFA;color:var(--ink);
+}
+input:focus,select:focus{outline:none;border-color:var(--tartan)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:16px}
+
+.btn{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:19px;
+  letter-spacing:.06em;text-transform:uppercase;
+  background:var(--tartan);color:var(--lane);
+  border:none;border-radius:10px;padding:12px 26px;cursor:pointer;
+  box-shadow:0 3px 0 var(--tartan-dark);
+}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--tartan-dark)}
+.btn:focus-visible{outline:3px solid var(--crono);outline-offset:2px}
+
+/* ---------- Marcadores tipo cronómetro ---------- */
+.splits{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:6px}
+.split{
+  background:var(--chip);
+  border:1px solid #F0D9CC;
+  border-radius:12px;
+  padding:12px 14px;
+  text-align:center;
+}
+.split .d{font-weight:800;font-size:13px;letter-spacing:.08em;color:var(--tartan-dark);text-transform:uppercase}
+.split .t{font-family:'Chivo Mono',monospace;font-weight:700;font-size:26px;font-variant-numeric:tabular-nums}
+.split.key{background:var(--ink);border-color:var(--ink)}
+.split.key .d{color:#F4B79F}
+.split.key .t{color:var(--lane)}
+
+table{width:100%;border-collapse:collapse;margin-top:10px;font-variant-numeric:tabular-nums}
+th{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:15px;
+  letter-spacing:.06em;text-transform:uppercase;text-align:left;
+  color:var(--ink-soft);border-bottom:2px solid var(--line);padding:8px 10px;
+}
+td{padding:8px 10px;border-bottom:1px solid var(--line);font-family:'Chivo Mono',monospace;font-size:17px}
+tr.lap400 td{background:#FFF3EC;font-weight:700}
+tr.meta td{font-family:'Nunito';font-weight:800;color:var(--crono)}
+
+.points{
+  display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+  background:var(--ink);color:var(--lane);
+  border-radius:12px;padding:16px 20px;margin:14px 0 18px;
+}
+.points .n{font-family:'Chivo Mono',monospace;font-weight:700;font-size:42px;line-height:1}
+.points .lbl{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:#F4B79F}
+.who{font-weight:800;color:var(--tartan-dark)}
+
+.note{font-size:13px;color:var(--ink-soft);margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
+.err{color:#A6232E;font-weight:800;margin-top:10px;display:none}
+
+/* ---------- cronómetro de carrera ---------- */
+.crono{
+  background:var(--ink);
+  border-radius:14px;
+  padding:18px 16px;
+  margin:16px 0 18px;
+  color:var(--lane);
+  text-align:center;
+}
+.crono .lbl{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:15px;
+  letter-spacing:.12em;text-transform:uppercase;color:#F4B79F;
+}
+.crono .big{
+  font-family:'Chivo Mono',monospace;font-weight:700;
+  font-size:58px;line-height:1.05;font-variant-numeric:tabular-nums;
+}
+#cDiff{
+  font-family:'Chivo Mono',monospace;font-weight:700;font-size:26px;
+  margin:6px 0 2px;font-variant-numeric:tabular-nums;min-height:32px;
+}
+#cInfo{font-size:14px;color:#D8CFC6;min-height:20px}
+.ahead{color:#7DE0A6}
+.behind{color:#FF9A8B}
+.cbtn{
+  width:100%;border:none;border-radius:14px;cursor:pointer;
+  font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:30px;
+  letter-spacing:.06em;text-transform:uppercase;
+  background:var(--tartan);color:var(--lane);
+  padding:22px 10px;margin-top:14px;
+  box-shadow:0 4px 0 var(--tartan-dark);
+}
+.cbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--tartan-dark)}
+.cbtn.go{background:var(--crono);box-shadow:0 4px 0 #154D38}
+.cbtn.go:active{box-shadow:0 1px 0 #154D38}
+.cbtn:disabled{background:#4A443E;box-shadow:none;color:#9A918A}
+.cmini{display:flex;gap:10px;margin-top:10px}
+.cmini button{
+  flex:1;background:transparent;color:#D8CFC6;cursor:pointer;
+  border:1.5px solid #4A443E;border-radius:10px;padding:9px;
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;
+}
+td .ahead,td .behind{font-weight:700}
+
+/* pista de atletismo alrededor del crono */
+.trackwrap{position:relative;max-width:390px;margin:8px auto 2px}
+.trackwrap svg{display:block;width:100%;height:auto}
+.tcenter{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  text-align:center;width:56%;
+}
+.tcenter .big{font-size:42px}
+.tcenter #cDiff{font-size:22px;margin:2px 0 0;min-height:26px}
+#cRem{font-size:13px;color:#D8CFC6}
+.tlbl{
+  font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:11px;
+  letter-spacing:.1em;fill:#FFFFFF;
+}
+.tleyenda{
+  display:flex;justify-content:center;gap:18px;margin-top:10px;
+  font-size:12px;font-weight:700;
+}
+.tleyenda .lgoal{color:#FFFFFF}
+.tleyenda .lreal{color:#46B97E}
+
+@media (max-width:560px){
+  header{padding:22px 16px 20px}
+  header .inner{gap:14px;justify-content:space-between}
+  .oval{width:108px;height:auto}
+  header .sub{font-size:12px;letter-spacing:.1em}
+  nav{padding:0 14px;gap:8px}
+  nav button{flex:1 1 auto;font-size:16px;padding:9px 10px}
+  main{padding:0 14px;margin-top:20px}
+  .card{padding:16px 14px;border-radius:12px}
+  h2{font-size:21px}
+  .hint{font-size:13px}
+  .row{grid-template-columns:1fr 1fr;gap:10px}
+  .row > div:has(.btn){grid-column:1 / -1}
+  .btn{width:100%}
+  input,select{font-size:17px;padding:9px 10px}
+  .splits{grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}
+  .split{padding:9px 8px}
+  .split .t{font-size:21px}
+  .split .d{font-size:11px}
+  .points{padding:12px 14px}
+  .points .n{font-size:32px}
+  .points .lbl{font-size:13px}
+  td,th{padding:6px 5px;font-size:14px}
+  td{font-size:15px}
+  .tcenter .big{font-size:31px}
+  .tcenter #cDiff{font-size:17px}
+  #cRem{font-size:11px}
+  .cbtn{font-size:26px;padding:20px 8px}
+}
+@media (max-width:380px){
+  .row{grid-template-columns:1fr}
+  h1{font-size:40px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <div>
+      <h1>Pasos Pista</h1>
+      <div class="sub">Calles 1–8 · Ritmos · Tabla húngara</div>
+    </div>
+    <svg class="oval" width="150" height="92" viewBox="0 0 150 92" aria-hidden="true">
+      <rect x="0" y="0" width="150" height="92" rx="14" fill="rgba(0,0,0,.14)"/>
+      <rect x="14" y="23" width="122" height="50" rx="25" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+      <rect x="27" y="36" width="96" height="24" rx="12" fill="none" stroke="#FFD9C7" stroke-width="1.6" stroke-dasharray="4 5"/>
+      <line x1="111" y1="67" x2="111" y2="79" stroke="#FFFFFF" stroke-width="3"/>
+      <circle cx="111" cy="73" r="5" fill="#241F1A" stroke="#fff" stroke-width="1.6"/>
+      <text x="39" y="16" text-anchor="middle" fill="#FFE3D6" font-family="Saira Condensed" font-weight="700" font-size="11">200 m</text>
+      <text x="111" y="90" text-anchor="middle" fill="#fff" font-family="Saira Condensed" font-weight="700" font-size="11">META</text>
+    </svg>
+  </div>
+</header>
+
+<nav>
+  <button id="tabPasos" class="on" onclick="showTab('pasos')">Pasos 200 / 400</button>
+  <button id="tabSeg" onclick="showTab('seguir')">Seguir carrera</button>
+  <button id="tabHung" onclick="showTab('hungara')">Estimador húngaro</button>
+</nav>
+
+<main>
+
+<!-- ================== MÓDULO 1: PASOS ================== -->
+<section id="pasos" class="on">
+
+  <div class="card">
+    <h2>Por ritmo</h2>
+    <p class="hint">Introduce el ritmo y te doy los tiempos de paso por 200 m y 400 m (y el resto de referencias de pista).</p>
+    <div class="row">
+      <div>
+        <label for="ritmo">Ritmo por km (330 = 3:30)</label>
+        <input id="ritmo" type="text" inputmode="numeric" placeholder="330" value="3:30">
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="btn" onclick="calcRitmo()">Calcular pasos</button>
+      </div>
+    </div>
+    <div id="errRitmo" class="err"></div>
+    <div id="outRitmo"></div>
+  </div>
+
+  <div class="card">
+    <h2>Por objetivo</h2>
+    <p class="hint">Elige distancia y tiempo objetivo: te genero todos los pasos acumulados, con las vueltas de 400 m (o cada 5 km en ruta) destacadas. Para cronometrar en directo, usa la pestaña <strong>Seguir carrera</strong>.</p>
+    <div class="row">
+      <div>
+        <label for="dist">Distancia</label>
+        <select id="dist">
+          <option value="400">400 m</option>
+          <option value="600">600 m</option>
+          <option value="800">800 m</option>
+          <option value="1000" selected>1000 m</option>
+          <option value="1500">1500 m</option>
+          <option value="2000">2000 m</option>
+          <option value="3000">3000 m</option>
+          <option value="5000">5000 m</option>
+          <option value="10000">10 000 m</option>
+          <option value="21097.5">Medio maratón</option>
+          <option value="42195">Maratón</option>
+        </select>
+      </div>
+      <div>
+        <label for="obj">Tiempo objetivo (255 = 2:55)</label>
+        <input id="obj" type="text" inputmode="numeric" placeholder="255" value="2:55">
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="btn" onclick="calcObjetivo()">Generar pasos</button>
+      </div>
+    </div>
+    <div id="errObj" class="err"></div>
+    <div id="outObj"></div>
+  </div>
+
+</section>
+
+<!-- ================== MÓDULO 2: SEGUIR LA CARRERA ================== -->
+<section id="seguir">
+
+  <div class="card">
+    <h2>Seguir la carrera</h2>
+    <p class="hint">Para pruebas de pista (400 a 10 000 m). Dale a <strong>Salida</strong> con el disparo y a <strong>Paso</strong> cada vez que cruce los 200 m. En la pista, el punto blanco es la liebre del objetivo y el punto grande es tu atleta: cada distancia sale de su línea de salida real y todas acaban en meta.</p>
+    <div class="row">
+      <div>
+        <label for="segDist">Prueba</label>
+        <select id="segDist">
+          <option value="400">400 m</option>
+          <option value="600">600 m</option>
+          <option value="800">800 m</option>
+          <option value="1000" selected>1000 m</option>
+          <option value="1500">1500 m</option>
+          <option value="2000">2000 m</option>
+          <option value="3000">3000 m</option>
+          <option value="5000">5000 m</option>
+          <option value="10000">10 000 m</option>
+        </select>
+      </div>
+      <div>
+        <label for="segObj">Tiempo objetivo (255 = 2:55)</label>
+        <input id="segObj" type="text" inputmode="numeric" placeholder="255" value="2:55">
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="btn" onclick="prepCarrera()">Preparar carrera</button>
+      </div>
+    </div>
+    <div id="errSeg" class="err"></div>
+    <div id="outSeg"></div>
+  </div>
+
+</section>
+
+<!-- ================== MÓDULO 3: TABLA HÚNGARA ================== -->
+<section id="hungara">
+
+  <div class="card">
+    <h2>Estimador · tabla húngara (World Athletics)</h2>
+    <p class="hint">Escribe tu nombre y tu marca en una prueba: calculo tus puntos en la tabla húngara y los tiempos equivalentes en el resto de distancias.</p>
+    <div class="row">
+      <div>
+        <label for="nombre">Nombre</label>
+        <input id="nombre" type="text" placeholder="Tatín" style="font-family:'Nunito';font-weight:700">
+      </div>
+      <div>
+        <label for="sexo">Categoría</label>
+        <select id="sexo">
+          <option value="H" selected>Masculina</option>
+          <option value="M">Femenina</option>
+        </select>
+      </div>
+      <div>
+        <label for="prueba">Prueba</label>
+        <select id="prueba"></select>
+      </div>
+      <div>
+        <label for="marca">Marca (255.4 = 2:55.4)</label>
+        <input id="marca" type="text" inputmode="decimal" placeholder="255.4">
+      </div>
+    </div>
+    <button class="btn" onclick="calcHungara()">Calcular equivalencias</button>
+    <div id="errHung" class="err"></div>
+    <div id="outHung"></div>
+    <p class="note">Aproximación a las tablas de puntuación húngaras (Spiriev) de World Athletics, aire libre. Los valores son orientativos para entrenamiento: la tabla oficial puede variar unos puntos.</p>
+  </div>
+
+</section>
+
+</main>
+
+
+<script>
+/* ---------- utilidades de tiempo ---------- */
+function parseTime(str){
+  if(!str) return null;
+  str = str.trim().replace(',', '.').replace(/['"’″]/g,':').replace(/::+/g,':');
+  if(!/^[\d:.]+$/.test(str)) return null;
+  /* sin ":" → formato compacto de teclado numérico: 330 = 3:30, 1655 = 16:55, 13200 = 1:32:00 */
+  if(str.indexOf(':') === -1){
+    const dot = str.indexOf('.');
+    const intPart = dot === -1 ? str : str.slice(0, dot);
+    const decPart = dot === -1 ? '' : str.slice(dot);
+    if(intPart.length > 2){
+      const ss = parseInt(intPart.slice(-2), 10);
+      const mm = parseInt(intPart.slice(-4, -2) || '0', 10);
+      const hh = parseInt(intPart.slice(0, -4) || '0', 10);
+      if(ss < 60 && mm < 60){
+        const s = hh*3600 + mm*60 + ss + (decPart ? parseFloat('0' + decPart) : 0);
+        return s > 0 ? s : null;
+      }
+    }
+    const s = parseFloat(str);
+    return (isFinite(s) && s > 0) ? s : null;
+  }
+  const parts = str.split(':');
+  if(parts.length > 3 || parts.some(p => p === '')) return null;
+  let s = 0;
+  for(const p of parts){ s = s*60 + parseFloat(p); }
+  return (isFinite(s) && s > 0) ? s : null;
+}
+function fmt(sec, dec){
+  if(dec === undefined) dec = 1;
+  const neg = sec < 0; sec = Math.abs(sec);
+  const h = Math.floor(sec/3600);
+  const m = Math.floor((sec - h*3600)/60);
+  let s = sec - h*3600 - m*60;
+  let sStr = s.toFixed(dec);
+  if(parseFloat(sStr) >= 60){ sStr = (0).toFixed(dec); return fmt(sec - s + 60, dec); }
+  if(parseFloat(sStr) < 10) sStr = '0' + sStr;
+  let out = h > 0 ? h + ':' + String(m).padStart(2,'0') + ':' + sStr
+                  : m + ':' + sStr;
+  return (neg ? '-' : '') + out;
+}
+function showErr(id, msg){
+  const el = document.getElementById(id);
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+}
+function showTab(name){
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === name));
+  document.getElementById('tabPasos').classList.toggle('on', name === 'pasos');
+  document.getElementById('tabSeg').classList.toggle('on', name === 'seguir');
+  document.getElementById('tabHung').classList.toggle('on', name === 'hungara');
+}
+
+/* ---------- módulo 1A: pasos por ritmo ---------- */
+function calcRitmo(){
+  const t = parseTime(document.getElementById('ritmo').value);
+  const out = document.getElementById('outRitmo');
+  if(t === null || t < 100 || t > 900){
+    showErr('errRitmo','Escribe el ritmo en min y seg por km: 330 o 3:30.');
+    out.innerHTML = ''; return;
+  }
+  showErr('errRitmo','');
+  const per = m => t * m / 1000;
+  const refs = [
+    [100,false],[200,true],[300,false],[400,true],[600,false],[800,false],[1000,false]
+  ];
+  let chips = refs.map(([m,key]) =>
+    '<div class="split' + (key ? ' key' : '') + '"><div class="d">' + m + ' m</div><div class="t">' + fmt(per(m)) + '</div></div>'
+  ).join('');
+  const kmh = (3600 / t).toFixed(2);
+  out.innerHTML =
+    '<div class="splits">' + chips + '</div>' +
+    '<p class="note">Velocidad: <strong>' + kmh + ' km/h</strong> · vuelta de 400 m cada <strong>' + fmt(per(400)) + '</strong>, mitad de vuelta (200 m) cada <strong>' + fmt(per(200)) + '</strong>.</p>';
+}
+
+/* ---------- módulo 1B: pasos acumulados por objetivo ---------- */
+/* ---------- módulo 1B: objetivo + cronómetro de carrera ---------- */
+const crono = {targets:[], D:0, T:0, dec:1, startOff:0, running:false, done:false, t0:0, laps:[], raf:null, wake:null};
+
+function calcObjetivo(){
+  const D = parseFloat(document.getElementById('dist').value);
+  const T = parseTime(document.getElementById('obj').value);
+  const out = document.getElementById('outObj');
+  if(T === null){
+    showErr('errObj','Escribe el tiempo objetivo: 255 (=2:55) o 13200 (=1:32:00).');
+    out.innerHTML = ''; return;
+  }
+  const ritmoKm = T / D * 1000;
+  if(ritmoKm < 100 || ritmoKm > 1200){
+    showErr('errObj','Ese tiempo no cuadra con la distancia elegida. Revisa la marca.');
+    out.innerHTML = ''; return;
+  }
+  showErr('errObj','');
+  const ruta = D > 10000;
+  let rows = '', chips = '';
+  if(ruta){
+    for(let km = 1; km*1000 < D; km++){
+      const cada5 = (km % 5 === 0);
+      rows += '<tr' + (cada5 ? ' class="lap400"' : '') + '><td>km ' + km + '</td><td>' + fmt(T*km*1000/D, 0) + '</td><td>' + (cada5 ? km + ' km' : '·') + '</td></tr>';
+      if(D > 22000 && km === 21){
+        rows += '<tr class="lap400"><td>21,097 m</td><td>' + fmt(T*21097.5/D, 0) + '</td><td>Media</td></tr>';
+      }
+    }
+    rows += '<tr class="meta"><td>' + (D === 42195 ? 'Maratón' : 'Media') + '</td><td>' + fmt(T, 0) + '</td><td>META</td></tr>';
+    chips =
+      '<div class="split key"><div class="d">Ritmo / km</div><div class="t">' + fmt(ritmoKm) + '</div></div>' +
+      '<div class="split key"><div class="d">Cada 5 km</div><div class="t">' + fmt(ritmoKm*5, 0) + '</div></div>' +
+      '<div class="split"><div class="d">Media parcial</div><div class="t">' + fmt(T*(D === 42195 ? 0.5 : 21097.5/D), 0) + '</div></div>';
+  } else {
+    const per200 = T / D * 200;
+    for(let m = 200; m < D; m += 200){
+      const lap400 = (m % 400 === 0);
+      rows += '<tr' + (lap400 ? ' class="lap400"' : '') + '><td>' + m + ' m</td><td>' + fmt(T*m/D) + '</td><td>' + (lap400 ? 'Vuelta ' + (m/400) : '·') + '</td></tr>';
+    }
+    rows += '<tr class="meta"><td>' + D + ' m</td><td>' + fmt(T) + '</td><td>META</td></tr>';
+    chips =
+      '<div class="split key"><div class="d">Cada 200 m</div><div class="t">' + fmt(per200) + '</div></div>' +
+      '<div class="split key"><div class="d">Cada 400 m</div><div class="t">' + fmt(per200*2) + '</div></div>' +
+      '<div class="split"><div class="d">Ritmo / km</div><div class="t">' + fmt(ritmoKm) + '</div></div>';
+  }
+  out.innerHTML =
+    '<div class="splits" style="margin-bottom:14px">' + chips + '</div>' +
+    '<table><thead><tr><th>Paso</th><th>Tiempo acumulado</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+/* ---------- módulo 2: seguir la carrera (solo pista, 400–10 000) ---------- */
+/* Geometría real IAAF a escala 1 m = 2 px: rectas de 84,39 m y curvas de 115,61 m (r = 36,8 m) */
+const TR = {cx:174, cy:103, R:73.6, L:168.78, ancho:28, C_M:115.61, L_M:84.39};
+
+function trackPoint(m, off){
+  /* m = metros recorridos sobre la cuerda desde la línea de meta, sentido antihorario.
+     off = desplazamiento en px hacia fuera de la pista (normal local). */
+  off = off || 0;
+  m = ((m % 400) + 400) % 400;
+  const xr = TR.cx + TR.L/2, xl = TR.cx - TR.L/2; /* centros de los semicírculos */
+  const Rp = TR.R + off;
+  const C = TR.C_M, L = TR.L_M;
+  if(m < C){                       /* curva derecha: meta hacia la contrarrecta */
+    const u = m / C;
+    return {x: xr + Rp*Math.sin(u*Math.PI), y: TR.cy + Rp*Math.cos(u*Math.PI)};
+  } else if(m < C + L){            /* contrarrecta (arriba, derecha a izquierda) */
+    const t = (m - C) / L;
+    return {x: xr - t*TR.L, y: TR.cy - Rp};
+  } else if(m < 2*C + L){          /* curva izquierda */
+    const u = (m - C - L) / C;
+    return {x: xl - Rp*Math.sin(u*Math.PI), y: TR.cy - Rp*Math.cos(u*Math.PI)};
+  } else {                         /* recta de meta (abajo, izquierda a derecha) */
+    const t = (m - 2*C - L) / L;
+    return {x: xl + t*TR.L, y: TR.cy + Rp};
+  }
+}
+function trackP(d){
+  /* posición en metros sobre la pista para una distancia recorrida d */
+  return (((crono.startOff + d) % 400) + 400) % 400;
+}
+function stadiumRect(off){
+  /* rect redondeado (forma de estadio) desplazado off px respecto a la cuerda */
+  const x = TR.cx - TR.L/2 - TR.R - off, y = TR.cy - TR.R - off;
+  const w = TR.L + 2*(TR.R + off), h = 2*(TR.R + off), r = TR.R + off;
+  return 'x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="' + r.toFixed(1) + '" ry="' + r.toFixed(1) + '"';
+}
+
+function prepCarrera(){
+  const D = parseInt(document.getElementById('segDist').value, 10);
+  const T = parseTime(document.getElementById('segObj').value);
+  const out = document.getElementById('outSeg');
+  if(T === null){
+    showErr('errSeg','Escribe el tiempo objetivo: 255 (=2:55) o 1655 (=16:55).');
+    out.innerHTML = ''; return;
+  }
+  const ritmoKm = T / D * 1000;
+  if(ritmoKm < 100 || ritmoKm > 1200){
+    showErr('errSeg','Ese tiempo no cuadra con la prueba elegida. Revisa la marca.');
+    out.innerHTML = ''; return;
+  }
+  showErr('errSeg','');
+  cronoReset(true);
+
+  const targets = [];
+  for(let m = 200; m < D; m += 200){
+    targets.push({m, label:m + ' m', t:T*m/D, key:(m%400===0)});
+  }
+  targets.push({m:D, label:D + ' m', t:T, meta:true});
+
+  crono.targets = targets; crono.D = D; crono.T = T; crono.dec = 1;
+  crono.startOff = (400 - D % 400) % 400; /* salida real: todas las pruebas acaban en meta */
+
+  const sp = trackP(0);
+  const s1 = trackPoint(sp, -TR.ancho/2), s2 = trackPoint(sp, TR.ancho/2);
+  const sTxt = trackPoint(sp, TR.ancho/2 + 14);
+  const m1 = trackPoint(0, -TR.ancho/2), m2 = trackPoint(0, TR.ancho/2);
+  const mTxt = trackPoint(0, TR.ancho/2 + 14);
+  const d0 = trackPoint(sp);
+  const vueltas = D / 400;
+
+  let rows = '';
+  targets.forEach((tg, i) => {
+    const cls = tg.meta ? ' class="meta"' : (tg.key ? ' class="lap400"' : '');
+    rows += '<tr' + cls + '><td>' + tg.label + '</td><td>' + fmt(tg.t, 1) + '</td>' +
+            '<td id="real_' + i + '">—</td><td id="dif_' + i + '">—</td></tr>';
+  });
+
+  out.innerHTML =
+    '<div class="crono">' +
+      '<div class="lbl" id="cLbl">' + D + ' m · objetivo ' + fmt(T, 1) + ' · ' + (Number.isInteger(vueltas) ? vueltas : vueltas.toFixed(2).replace('.', ',')) + ' vueltas</div>' +
+      '<div class="trackwrap">' +
+        '<svg viewBox="0 0 348 212" aria-hidden="true">' +
+          '<rect ' + stadiumRect(0) + ' fill="none" stroke="#C8502E" stroke-width="' + TR.ancho + '"/>' +
+          '<rect ' + stadiumRect(TR.ancho/2) + ' fill="none" stroke="#FFFFFF" stroke-width="1.6"/>' +
+          '<rect ' + stadiumRect(-TR.ancho/2) + ' fill="none" stroke="#FFFFFF" stroke-width="1.6"/>' +
+          '<rect ' + stadiumRect(0) + ' fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1" stroke-dasharray="3 7"/>' +
+          '<line x1="' + m1.x.toFixed(1) + '" y1="' + m1.y.toFixed(1) + '" x2="' + m2.x.toFixed(1) + '" y2="' + m2.y.toFixed(1) + '" stroke="#FFFFFF" stroke-width="4"/>' +
+          '<text x="' + mTxt.x.toFixed(1) + '" y="' + (mTxt.y + 6).toFixed(1) + '" text-anchor="middle" class="tlbl">' + (crono.startOff ? 'META' : 'META · SALIDA') + '</text>' +
+          (crono.startOff ?
+            '<line x1="' + s1.x.toFixed(1) + '" y1="' + s1.y.toFixed(1) + '" x2="' + s2.x.toFixed(1) + '" y2="' + s2.y.toFixed(1) + '" stroke="#7DE0A6" stroke-width="3.5"/>' +
+            '<text x="' + Math.min(Math.max(sTxt.x, 22), 326).toFixed(1) + '" y="' + Math.min(Math.max(sTxt.y < TR.cy ? sTxt.y : sTxt.y + 6, 11), 207).toFixed(1) + '" text-anchor="middle" class="tlbl" fill="#7DE0A6">SALIDA</text>'
+            : '') +
+          '<circle id="dGoal" cx="' + d0.x.toFixed(1) + '" cy="' + d0.y.toFixed(1) + '" r="5.5" fill="#FFFFFF" stroke="#241F1A" stroke-width="1.5"/>' +
+          '<circle id="dReal" cx="' + d0.x.toFixed(1) + '" cy="' + d0.y.toFixed(1) + '" r="8.5" fill="#46B97E" stroke="#FFFFFF" stroke-width="2"/>' +
+        '</svg>' +
+        '<div class="tcenter">' +
+          '<div class="big" id="cTime">0:00.0</div>' +
+          '<div id="cDiff">&nbsp;</div>' +
+          '<div id="cRem">' + D + ' m por delante</div>' +
+        '</div>' +
+      '</div>' +
+      '<div id="cInfo">Siguiente paso: ' + targets[0].label + ' · objetivo ' + fmt(targets[0].t, 1) + '</div>' +
+      '<button class="cbtn go" id="cMain" onclick="cronoMain()">Salida</button>' +
+      '<div class="cmini">' +
+        '<button onclick="cronoUndo()">Deshacer paso</button>' +
+        '<button onclick="cronoReset()">Reiniciar</button>' +
+      '</div>' +
+      '<div class="tleyenda"><span class="lgoal">● liebre del objetivo</span><span class="lreal">● tu atleta</span></div>' +
+    '</div>' +
+    '<table><thead><tr><th>Paso</th><th>Objetivo</th><th>Real</th><th>Dif</th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+/* ---------- lógica del cronómetro ---------- */
+function nowS(){ return performance.now()/1000; }
+function fmtDiff(d){
+  const s = Math.abs(d).toFixed(1);
+  return d <= 0 ? '−' + s + 's' : '+' + s + 's';
+}
+function cronoMain(){
+  if(crono.done) return;
+  if(!crono.running){
+    crono.running = true;
+    crono.t0 = nowS();
+    cronoLoop();
+    cronoWake(true);
+    cronoButtons();
+    if(navigator.vibrate) navigator.vibrate(40);
+  } else {
+    cronoLap();
+  }
+}
+function cronoLap(){
+  const i = crono.laps.length;
+  if(i >= crono.targets.length) return;
+  const t = nowS() - crono.t0;
+  crono.laps.push(t);
+  const tg = crono.targets[i];
+  const d = t - tg.t;
+  document.getElementById('real_' + i).textContent = fmt(t, crono.dec);
+  document.getElementById('dif_' + i).innerHTML =
+    '<span class="' + (d <= 0 ? 'ahead' : 'behind') + '">' + fmtDiff(d) + '</span>';
+  const proj = t / tg.m * crono.D;
+  document.getElementById('cDiff').innerHTML =
+    '<span class="' + (d <= 0 ? 'ahead' : 'behind') + '">' + fmtDiff(d) + '</span>';
+  if(tg.meta){
+    crono.running = false; crono.done = true;
+    cancelAnimationFrame(crono.raf);
+    document.getElementById('cTime').textContent = fmt(t, crono.dec);
+    document.getElementById('cInfo').textContent = 'Final: ' + fmt(t, crono.dec) + ' · objetivo ' + fmt(crono.T, crono.dec) + ' (' + fmtDiff(d) + ')';
+    document.getElementById('cLbl').textContent = '¡Meta!';
+    trackUpdate(t);
+    cronoWake(false);
+  } else {
+    const nx = crono.targets[i+1];
+    document.getElementById('cInfo').textContent =
+      'Siguiente: ' + nx.label + ' · objetivo ' + fmt(nx.t, crono.dec) + ' · proyección ' + fmt(proj, crono.dec);
+  }
+  cronoButtons();
+  if(navigator.vibrate) navigator.vibrate(40);
+}
+function cronoUndo(){
+  if(!crono.laps.length) return;
+  const i = crono.laps.length - 1;
+  crono.laps.pop();
+  const r = document.getElementById('real_' + i), f = document.getElementById('dif_' + i);
+  if(r){ r.textContent = '—'; } if(f){ f.textContent = '—'; }
+  if(crono.done){ crono.done = false; crono.running = true; cronoLoop(); document.getElementById('cLbl').textContent = crono.D + ' m · objetivo ' + fmt(crono.T, 1); }
+  const nx = crono.targets[crono.laps.length];
+  document.getElementById('cInfo').textContent = 'Siguiente: ' + nx.label + ' · objetivo ' + fmt(nx.t, crono.dec);
+  if(!crono.laps.length) document.getElementById('cDiff').innerHTML = '&nbsp;';
+  cronoButtons();
+}
+function cronoReset(silent){
+  crono.running = false; crono.done = false; crono.laps = [];
+  cancelAnimationFrame(crono.raf);
+  cronoWake(false);
+  if(silent) return;
+  crono.targets.forEach((tg, i) => {
+    const r = document.getElementById('real_' + i), f = document.getElementById('dif_' + i);
+    if(r) r.textContent = '—'; if(f) f.textContent = '—';
+  });
+  document.getElementById('cTime').textContent = '0:00.0';
+  document.getElementById('cDiff').innerHTML = '&nbsp;';
+  document.getElementById('cRem').textContent = crono.D + ' m por delante';
+  const v = crono.D/400;
+  document.getElementById('cLbl').textContent = crono.D + ' m · objetivo ' + fmt(crono.T, 1) + ' · ' + (Number.isInteger(v) ? v : v.toFixed(2).replace('.', ',')) + ' vueltas';
+  document.getElementById('cInfo').textContent = 'Siguiente paso: ' + crono.targets[0].label + ' · objetivo ' + fmt(crono.targets[0].t, crono.dec);
+  const d0 = trackPoint(trackP(0));
+  setDot('dGoal', d0); setDot('dReal', d0);
+  const dr = document.getElementById('dReal');
+  if(dr) dr.setAttribute('fill', '#46B97E');
+  cronoButtons();
+}
+function cronoButtons(){
+  const b = document.getElementById('cMain');
+  if(!b) return;
+  if(crono.done){ b.textContent = 'Carrera completada'; b.disabled = true; b.classList.remove('go'); return; }
+  b.disabled = false;
+  if(!crono.running){ b.textContent = 'Salida'; b.classList.add('go'); }
+  else {
+    const nx = crono.targets[crono.laps.length];
+    b.textContent = 'Paso ▸ ' + nx.label;
+    b.classList.remove('go');
+  }
+}
+function cronoLoop(){
+  if(!crono.running) return;
+  const t = nowS() - crono.t0;
+  document.getElementById('cTime').textContent = fmt(t, 1);
+  trackUpdate(t);
+  crono.raf = requestAnimationFrame(cronoLoop);
+}
+
+/* posición real estimada (entre pasos, con la velocidad del último tramo) */
+function realDist(t){
+  const n = crono.laps.length;
+  if(!n) return Math.min(t / crono.T, 1) * crono.D;
+  const dLast = crono.targets[n-1].m, tLast = crono.laps[n-1];
+  let v;
+  if(n === 1) v = dLast / tLast;
+  else v = (dLast - crono.targets[n-2].m) / (tLast - crono.laps[n-2]);
+  return Math.min(dLast + Math.max(0, t - tLast) * v, crono.D);
+}
+function setDot(id, pt){
+  const el = document.getElementById(id);
+  if(el){ el.setAttribute('cx', pt.x.toFixed(1)); el.setAttribute('cy', pt.y.toFixed(1)); }
+}
+function trackUpdate(t){
+  if(!document.getElementById('dReal')) return;
+  const goalD = Math.min(t / crono.T, 1) * crono.D;
+  const realD = crono.done ? crono.D : realDist(t);
+  setDot('dGoal', trackPoint(trackP(goalD)));
+  setDot('dReal', trackPoint(trackP(realD)));
+  const behind = realD < goalD - 0.5;
+  document.getElementById('dReal').setAttribute('fill', behind ? '#FF6B4A' : '#46B97E');
+  const rem = Math.max(0, Math.round((crono.D - realD) / 5) * 5);
+  document.getElementById('cRem').textContent = crono.done ? '¡Meta!' : 'Quedan ' + rem + ' m';
+}
+async function cronoWake(on){
+  try{
+    if(on && 'wakeLock' in navigator){ crono.wake = await navigator.wakeLock.request('screen'); }
+    else if(!on && crono.wake){ await crono.wake.release(); crono.wake = null; }
+  }catch(e){}
+}
+
+/* ---------- módulo 3: tabla húngara ---------- */
+/* Puntos = A · (B − t)² , t en segundos. Aproximación Spiriev aire libre. */
+const TABLA = {
+  H: {
+    '100 m':   {A:24.63,    B:17.0},
+    '200 m':   {A:5.08,     B:35.5},
+    '400 m':   {A:1.021,    B:78.0},
+    '800 m':   {A:0.198,    B:182.0},
+    '1000 m':  {A:0.1238,   B:230.4},
+    '1500 m':  {A:0.04066,  B:385.0},
+    '3000 m':  {A:0.008216, B:837.6},
+    '5000 m':  {A:0.002778, B:1440.0},
+    '10 000 m':{A:0.000637, B:3000.0},
+    'Medio maratón':{A:0.00008443, B:7371.0},
+    'Maratón': {A:0.00002028, B:15241.0}
+  },
+  M: {
+    '100 m':   {A:9.92,     B:22.0},
+    '200 m':   {A:2.242,    B:45.5},
+    '400 m':   {A:0.335,    B:110.0},
+    '800 m':   {A:0.0928,   B:231.8},
+    '1000 m':  {A:0.0578,   B:293.7},
+    '1500 m':  {A:0.0218,   B:474.1},
+    '3000 m':  {A:0.005017, B:988.5},
+    '5000 m':  {A:0.001608, B:1740.6},
+    '10 000 m':{A:0.00037,  B:3629.0},
+    'Medio maratón':{A:0.0000669, B:8164.0},
+    'Maratón': {A:0.000015437, B:17008.0}
+  }
+};
+const DEC = {'100 m':2,'200 m':2,'400 m':2,'800 m':1,'1000 m':1,'1500 m':1,'3000 m':1,'5000 m':0,'10 000 m':0,'Medio maratón':0,'Maratón':0};
+
+function fillPruebas(){
+  const sel = document.getElementById('prueba');
+  sel.innerHTML = Object.keys(TABLA.H).map(p => '<option' + (p === '1000 m' ? ' selected' : '') + '>' + p + '</option>').join('');
+}
+fillPruebas();
+
+function calcHungara(){
+  const nombre = document.getElementById('nombre').value.trim() || 'Atleta';
+  const sexo = document.getElementById('sexo').value;
+  const prueba = document.getElementById('prueba').value;
+  const t = parseTime(document.getElementById('marca').value);
+  const out = document.getElementById('outHung');
+  if(t === null){
+    showErr('errHung','Escribe la marca: 255.4 (=2:55.4) o solo segundos (55.2).');
+    out.innerHTML = ''; return;
+  }
+  const c = TABLA[sexo][prueba];
+  if(t >= c.B){
+    showErr('errHung','Esa marca queda fuera del rango de la tabla para ' + prueba + '. Revisa que la prueba y el tiempo coincidan.');
+    out.innerHTML = ''; return;
+  }
+  const pts = c.A * Math.pow(c.B - t, 2);
+  if(pts > 1400){
+    showErr('errHung','Esa marca supera el récord del mundo… revisa que la prueba elegida sea la correcta 😉');
+    out.innerHTML = ''; return;
+  }
+  showErr('errHung','');
+  let rows = '';
+  for(const [p, k] of Object.entries(TABLA[sexo])){
+    const est = k.B - Math.sqrt(pts / k.A);
+    const own = (p === prueba);
+    rows += '<tr' + (own ? ' class="lap400"' : '') + '><td style="font-family:Nunito;font-weight:800">' + p + '</td><td>' + fmt(est, DEC[p]) + '</td><td>' + (own ? 'Tu marca' : 'Estimado') + '</td></tr>';
+  }
+  out.innerHTML =
+    '<div class="points"><span class="n">' + Math.round(pts) + '</span><span class="lbl">puntos · tabla húngara</span></div>' +
+    '<p style="margin-bottom:6px">Equivalencias para <span class="who">' + nombre.replace(/[<>&]/g,'') + '</span> a partir de <strong>' + fmt(t, DEC[prueba]) + '</strong> en ' + prueba + ':</p>' +
+    '<table><thead><tr><th>Prueba</th><th>Tiempo equivalente</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+/* cálculo inicial de ejemplo */
+calcRitmo();
+calcObjetivo();
+prepCarrera();
+</script>
+</body>
+</html>
